@@ -1,0 +1,6 @@
+google-adk
+google-genai
+streamlit
+pymupdf
+pillow
+python-dotenv
