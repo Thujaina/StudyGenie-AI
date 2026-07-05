@@ -68,7 +68,7 @@ def extract_pdf_text(uploaded_file):
 def extract_txt(uploaded_file):
     return uploaded_file.read().decode("utf-8", errors="ignore")
 
-def ask_gemini(client, prompt, image=None, max_retries=3):
+def ask_gemini(client, prompt, image=None, max_retries=2):
     model_name = os.getenv("MODEL_NAME", "gemini-2.5-flash-lite")
 
     for attempt in range(max_retries):
@@ -83,8 +83,13 @@ def ask_gemini(client, prompt, image=None, max_retries=3):
                     model=model_name,
                     contents=prompt,
                 )
-
             return response.text
+
+        except errors.ClientError:
+            return (
+                "Gemini API quota is temporarily exhausted. "
+                "Please wait a few minutes and try again."
+            )
 
         except errors.ServerError:
             if attempt < max_retries - 1:
@@ -92,7 +97,7 @@ def ask_gemini(client, prompt, image=None, max_retries=3):
             else:
                 return (
                     "Gemini is temporarily overloaded. "
-                    "Please wait a few seconds and click Ask StudyGenie again."
+                    "Please wait a few seconds and try again."
                 )
 
 st.set_page_config(page_title="StudyGenie", page_icon="📚")
