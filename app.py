@@ -1,5 +1,9 @@
+
 import os
 import tempfile
+
+import time
+from google.genai import errors
 
 import fitz
 import streamlit as st
@@ -64,21 +68,32 @@ def extract_pdf_text(uploaded_file):
 def extract_txt(uploaded_file):
     return uploaded_file.read().decode("utf-8", errors="ignore")
 
+def ask_gemini(client, prompt, image=None, max_retries=3):
+    model_name = os.getenv("MODEL_NAME", "gemini-2.5-flash-lite")
 
-def ask_gemini(client, prompt, image=None):
-    if image is not None:
-        response = client.models.generate_content(
-            model=os.getenv("MODEL_NAME", "gemini-2.5-flash-lite"),
-            contents=[prompt, image],
-        )
-    else:
-        response = client.models.generate_content(
-            model=os.getenv("MODEL_NAME", "gemini-2.5-flash-lite"),
-            contents=prompt,
-        )
+    for attempt in range(max_retries):
+        try:
+            if image is not None:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[prompt, image],
+                )
+            else:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
 
-    return response.text
+            return response.text
 
+        except errors.ServerError:
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+            else:
+                return (
+                    "Gemini is temporarily overloaded. "
+                    "Please wait a few seconds and click Ask StudyGenie again."
+                )
 
 st.set_page_config(page_title="StudyGenie", page_icon="📚")
 
